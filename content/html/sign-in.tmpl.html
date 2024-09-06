@@ -1,0 +1,23 @@
+{{define "content" -}}
+<h1>Sign In</h1>
+<form class="row g-3 needs-validation" action="/users/sign-in" method="post" novalidate>
+  <div class="col-12">
+    <label class="form-label" for="email">Email</label>
+    <input class="form-control" id="email" name="email" type="email" autocomplete="email" required>
+    <div class="invalid-feedback" id="email-invalid-feedback">Please provide a valid email.</div>
+  </div>
+  <div class="col-12">
+    <label class="form-label" for="password">Password</label>
+    <input class="form-control" id="password" name="password" type="password" autocomplete="current-password" required>
+    <div class="invalid-feedback" id="password-invalid-feedback">Please provide a password.</div>
+  </div>
+  <div class="col-12">
+    <button class="btn btn-primary" type="submit">Sign In</button>
+  </div>
+</form>
+{{/* The JavaScript variable "formError" is used by "sign-in.js" */ -}}
+<script type="text/javascript">
+    var formError = {{.FormError}};
+</script>
+<script src="/content/js/sign-in.js"></script>
+{{- end}}

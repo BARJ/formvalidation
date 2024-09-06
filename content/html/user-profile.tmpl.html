@@ -1,0 +1,13 @@
+{{define "content" -}}
+<div class="card">
+  <div class="card-body">
+    <h5 class="card-title">{{.User.Surname}}</h5>
+    <h6 class="card-subtitle text-body-secondary">{{.User.Firstname}} {{.User.Surname}}</h6>
+  </div>
+  {{if eq .User.ID .CurrentUser.ID -}}
+  <ul class="list-group list-group-flush">
+    <li class="list-group-item"><strong>Email:</strong> {{.User.Email}}</li>
+  </ul>
+  {{- end}}
+</div>
+{{- end}}
