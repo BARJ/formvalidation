@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"net/mail"
+	"regexp"
 	"slices"
 	"strconv"
 )
@@ -65,6 +66,7 @@ func parseSiteError(err error) SiteError {
 var content embed.FS
 
 var siteTmpl = template.Must(template.ParseFS(content, "content/html/site.tmpl.html"))
+var signUpTmpl = template.Must(template.Must(siteTmpl.Clone()).ParseFS(content, "content/html/sign-up.tmpl.html"))
 var signInTmpl = template.Must(template.Must(siteTmpl.Clone()).ParseFS(content, "content/html/sign-in.tmpl.html"))
 var userProfileTmpl = template.Must(template.Must(siteTmpl.Clone()).ParseFS(content, "content/html/user-profile.tmpl.html"))
 
@@ -72,10 +74,12 @@ func registerSite(mux *http.ServeMux) {
 	mux.Handle("GET /content/css/", http.FileServerFS(content))
 	mux.Handle("GET /content/js/", http.FileServerFS(content))
 	mux.HandleFunc("/", makeHandler(homeHandler))
-	mux.HandleFunc("GET /users/{id}", makeHandler(userProfileHandler))
+	mux.HandleFunc("GET /users/sign-up", makeHandler(signUpHandler))
+	mux.HandleFunc("POST /users/sign-up", makeHandler(signUpHandler))
 	mux.HandleFunc("GET /users/sign-in", makeHandler(signInHandler))
 	mux.HandleFunc("POST /users/sign-in", makeHandler(signInHandler))
 	mux.HandleFunc("POST /users/sign-out", makeHandler(signOutHandler))
+	mux.HandleFunc("GET /users/{id}", makeHandler(userProfileHandler))
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) error {
@@ -154,7 +158,75 @@ func signInHandler(w http.ResponseWriter, r *http.Request) error {
 		return serveTemplate(w, signInTmpl, data)
 	}
 
-	// Set session cookie
+	// Set session cookie.
+	if session, err := newSession(user.id); err != nil {
+		return fmt.Errorf("failed to create session for user with ID %d: %v", user.id, err)
+	} else {
+		http.SetCookie(w, cookieWithSession(session))
+	}
+
+	// Redirect to user profile.
+	http.Redirect(w, r, fmt.Sprintf("/users/%d", user.id), http.StatusSeeOther)
+	return nil
+}
+
+func signUpHandler(w http.ResponseWriter, r *http.Request) error {
+	data := SiteData{Title: "Sign Up", FormError: make(map[string]string)}
+
+	if r.Method == http.MethodGet {
+		// Redirect to user profile if already signed in.
+		if user, ok := userFromContext(r.Context()); ok {
+			http.Redirect(w, r, fmt.Sprintf("/users/%d", user.id), http.StatusSeeOther)
+			return nil
+		}
+		// Serve sign-up page.
+		return serveTemplate(w, signUpTmpl, data)
+	}
+
+	// Validate email, firstname, surname, and password.
+	if r.FormValue("email") == "" {
+		data.FormError["email"] = "Require email."
+	} else if _, err := mail.ParseAddress(r.FormValue("email")); err != nil {
+		data.FormError["email"] = "Invalid email."
+	} else if i := slices.IndexFunc(users, func(u User) bool { return u.email == r.FormValue("email") }); i != -1 {
+		data.FormError["email"] = "Email already taken."
+	}
+	if r.FormValue("firstname") == "" {
+		data.FormError["firstname"] = "Require firstname."
+	} else if !regexp.MustCompile(`^( *[a-zA-Z] *){2,32}$`).MatchString(r.FormValue("firstname")) {
+		data.FormError["firstname"] = "Invalid firstname."
+	}
+	if r.FormValue("surname") == "" {
+		data.FormError["surname"] = "Require surname."
+	} else if !regexp.MustCompile(`^( *[a-zA-Z] *){2,32}$`).MatchString(r.FormValue("surname")) {
+		data.FormError["surname"] = "Invalid surname."
+	}
+	if r.FormValue("password") == "" {
+		data.FormError["password"] = "Require password."
+	} else if len(r.FormValue("password")) < 8 || len(r.FormValue("password")) > 32 {
+		data.FormError["password"] = "Invalid password."
+	} else if r.FormValue("password-confirm") == "" {
+		data.FormError["password-confirm"] = "Please confirm password."
+	} else if r.FormValue("password-confirm") != r.FormValue("password") {
+		data.FormError["password-confirm"] = "Password does not match."
+	}
+
+	// Serve form error(s).
+	if len(data.FormError) > 0 {
+		return serveTemplate(w, signUpTmpl, data)
+	}
+
+	// Create user.
+	user := User{
+		id:        users[len(users)-1].id + 1,
+		email:     r.FormValue("email"),
+		firstname: r.FormValue("firstname"),
+		surname:   r.FormValue("surname"),
+		password:  r.FormValue("password"),
+	}
+	users = append(users, user)
+
+	// Set session cookie.
 	if session, err := newSession(user.id); err != nil {
 		return fmt.Errorf("failed to create session for user with ID %d: %v", user.id, err)
 	} else {

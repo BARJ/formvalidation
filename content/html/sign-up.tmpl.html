@@ -1,0 +1,41 @@
+{{define "content" -}}
+<h1>Sign Up</h1>
+<form class="row g-3 needs-validation" action="/users/sign-up" method="post" novalidate>
+  <div class="col-12">
+    <label class="form-label" for="email">Email</label>
+    <input class="form-control" id="email" name="email" type="email" autocomplete="email" required>
+    <div class="invalid-feedback" id="email-invalid-feedback">Please provide a valid email.</div>
+  </div>
+  <div class="col-12">
+    <label class="form-label" for="firstname">Firstname</label>
+    <input class="form-control" id="firstname" name="firstname" type="text" minlength="2" maxlength="32" pattern="^( *[a-zA-Z] *){1,32}$" required>
+    <div class="form-text">Your firstname must be 2-32 characters long and must only contain letters.</div>
+    <div class="invalid-feedback"  id="firstname-invalid-feedback">Please provide a valid firstname.</div>
+  </div>
+  <div class="col-12">
+    <label class="form-label" for="surname">Surname</label>
+    <input class="form-control" id="surname" name="surname" type="text" maxlength="32" minlength="2" pattern="^( *[a-zA-Z] *){1,32}$" required>
+    <div class="form-text">Your surname must be 2-32 characters long and must only contain letters.</div>
+    <div class="invalid-feedback" id="surname-invalid-feedback">Please provide a valid surname.</div>
+  </div>
+  <div class="col-12">
+    <label class="form-label" for="password">Password</label>
+    <input class="form-control" id="password" name="password" type="password" autocomplete="new-password"  minlength="8" max="32" required>
+    <div class="form-text">Your password must be 8-32 characters long.</div>
+    <div class="invalid-feedback" id="password-invalid-feedback">Please provide a valid password.</div>
+  </div>
+  <div class="col-12">
+    <label class="form-label" for="password-confirm">Confirm password</label>
+    <input class="form-control" id="password-confirm" name="password-confirm" type="password" autocomplete="new-password" minlength="8" maxlength="32" required>
+    <div class="invalid-feedback" id="password-confirm-invalid-feedback">Please confirm password.</div>
+  </div>
+  <div class="col-12">
+    <button class="btn btn-primary" type="submit">Sign Up</button>
+  </div>
+</form>
+{{/* The JavaScript variable "formError" is used by "sign-up.js" */ -}}
+<script type="text/javascript">
+    var formError = {{.FormError}};
+</script>
+<script src="/content/js/sign-up.js"></script>
+{{- end}}
