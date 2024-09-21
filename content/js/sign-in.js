@@ -41,18 +41,20 @@ function validateFormServerError(id) {
 
     // Reset error by replacing server error with default client error
     // when input changes or when parent form is submitted.
-    const resetError = function (event) {
-        if (invalidFeedback.textContent === serverError) {
+    let doResetError = true;
+    const resetError = function () {
+        if (doResetError && invalidFeedback.textContent === serverError) {
             console.log(`subscribeFormInput(${id}): remove server error "${serverError}"`);
             invalidFeedback.textContent = defaultClientError;
             input.classList.remove("is-invalid");
         }
+        doResetError = false;
     };
     for (const event of ['keyup', 'change']) {
-        input.addEventListener(event, resetError);
+        input.addEventListener(event, resetError, {once: true});
     }
     if (input.form) {
-        input.form.addEventListener('submit', resetError);
+        input.form.addEventListener('submit', resetError, {once: true});
     }
 }
 
