@@ -1,5 +1,6 @@
-import {validateForm} from './form-validation.js';
+import {validateForm, validateEmailUnique} from './form-validation.js';
 
 document.addEventListener("DOMContentLoaded", function() {
     validateForm();
+    void validateEmailUnique();
 });

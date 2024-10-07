@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"embed"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -22,10 +23,10 @@ type SiteData struct {
 }
 
 type UserData struct {
-	ID        int
-	Email     string
-	Firstname string
-	Surname   string
+	ID        int    `json:"id"`
+	Email     string `json:"email"`
+	Firstname string `json:"firstname"`
+	Surname   string `json:"surname"`
 }
 
 func parseUserData(user User) UserData {
@@ -80,6 +81,26 @@ func registerSite(mux *http.ServeMux) {
 	mux.HandleFunc("POST /users/sign-in", makeHandler(signInHandler))
 	mux.HandleFunc("POST /users/sign-out", makeHandler(signOutHandler))
 	mux.HandleFunc("GET /users/{id}", makeHandler(userProfileHandler))
+	mux.HandleFunc("GET /users", listUsers)
+}
+
+func listUsers(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	userDataList := slices.Collect(func(yield func(user UserData) bool) {
+		for _, u := range users {
+			if u.email == r.FormValue("email") {
+				if !yield(parseUserData(u)) {
+					return
+				}
+			}
+		}
+	})
+	if userDataList == nil {
+		userDataList = []UserData{}
+	}
+	json.NewEncoder(w).Encode(struct {
+		Users []UserData `json:"users"`
+	}{Users: userDataList})
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) error {
